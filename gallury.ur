@@ -6,7 +6,7 @@ val thumbsPerPage = 16
 
 fun mapDml f l =
     case l of
-	    [] => return ()
+        [] => return ()
       | x :: xs => dml (f x); mapDml f xs
 
 fun range ( n : int) (m : int) : list int =
@@ -129,14 +129,14 @@ fun css () =
 
 fun image id =
     r <- oneRow (SELECT images.Image, images.MimeType
-		         FROM images
-		         WHERE images.Id={[id]});
+                 FROM images
+                 WHERE images.Id={[id]});
     returnBlob r.Images.Image (blessMime r.Images.MimeType)
 
 fun thumbnail id =
     r <- oneRow (SELECT images.Thumbnail
-		         FROM images
-		         WHERE images.Id={[id]});
+                 FROM images
+                 WHERE images.Id={[id]});
     returnBlob r.Images.Thumbnail (blessMime "image/jpeg")
     
 
@@ -204,99 +204,99 @@ fun searchQuery queryString =
 fun template (pageTitle : string) sidebarBody contentBody footerBody =
     return <xml>
       <head>
-	    <title>{[pageTitle]}</title>
-	    <link rel="stylesheet" type="text/css" href={url (css ())}/>
+        <title>{[pageTitle]}</title>
+        <link rel="stylesheet" type="text/css" href={url (css ())}/>
       </head>
       <body>
-	    <div class={header}>
-	      <a href={url (main ())}><h1>Gallury</h1></a>
-	    </div>
-	    <div class={wrapper}>
+        <div class={header}>
+          <a href={url (main ())}><h1>Gallury</h1></a>
+        </div>
+        <div class={wrapper}>
           <div class={sidebar}>{sidebarBody}</div>
           <div class={content}>{contentBody}</div>
-	    </div>
-	    <div class={pageNumbers}>{footerBody}</div>
+        </div>
+        <div class={pageNumbers}>{footerBody}</div>
     </body></xml>
 
 and post () =
     let
-	    fun submitPost upload =
-	        (* This procedure does all the necessary checks on uploaded content *)
-	        if blobSize (fileData upload.File) > maximumFileSize then
-		        return <xml>Whoa!  That one's too big.</xml>
-	        else
-		        case checkMime (fileMimeType upload.File) of
-		            None => return <xml>Whoa!  I'm not touching that.</xml>
-		          | Some _ =>
-		            case Thumbnailer.thumbnail upload.File of
-			            None => return <xml><body>
-			              <h1>At least you tried!</h1>
-			              <p>Could not generate thumbnail (invalid image)</p>
-			              <a href={url (main ())}>home</a>
-			            </body></xml>
-		              | Some thumb => uploadPost upload thumb
-	    and uploadPost upload thumb =
-	        (* This thumbnails and stores the uploaded, verified image into the database *)
-	        let
-		        val title = case fileName upload.File of
-				                None => "Untitled"
-			                  | Some t => t
-	        in
-		        id <- nextval s;
-		        dml (INSERT INTO images (Id, Title, MimeType, Image, Thumbnail)
-		             VALUES ({[id]}, {[title]},
-			             {[fileMimeType upload.File]}, {[fileData upload.File]}, {[thumb]}));
-		        return <xml><body>
-		          <h1>Uploaded Successfully!</h1>
-		          <a href={url (page id)}>click here</a>
-		        </body></xml>
-	        end
+        fun submitPost upload =
+            (* This procedure does all the necessary checks on uploaded content *)
+            if blobSize (fileData upload.File) > maximumFileSize then
+                return <xml>Whoa!  That one's too big.</xml>
+            else
+                case checkMime (fileMimeType upload.File) of
+                    None => return <xml>Whoa!  I'm not touching that.</xml>
+                  | Some _ =>
+                    case Thumbnailer.thumbnail upload.File of
+                        None => return <xml><body>
+                          <h1>At least you tried!</h1>
+                          <p>Could not generate thumbnail (invalid image)</p>
+                          <a href={url (main ())}>home</a>
+                        </body></xml>
+                      | Some thumb => uploadPost upload thumb
+        and uploadPost upload thumb =
+            (* This thumbnails and stores the uploaded, verified image into the database *)
+            let
+                val title = case fileName upload.File of
+                                None => "Untitled"
+                              | Some t => t
+            in
+                id <- nextval s;
+                dml (INSERT INTO images (Id, Title, MimeType, Image, Thumbnail)
+                     VALUES ({[id]}, {[title]},
+                         {[fileMimeType upload.File]}, {[fileData upload.File]}, {[thumb]}));
+                return <xml><body>
+                  <h1>Uploaded Successfully!</h1>
+                  <a href={url (page id)}>click here</a>
+                </body></xml>
+            end
     in
-	    template "Post"
-		         <xml/>
-		         <xml>
-		           <form>
-		             <upload{#File}/>
-		             <submit action={submitPost}/>
-		           </form>
-		         </xml>
-		         <xml/>
+        template "Post"
+                 <xml/>
+                 <xml>
+                   <form>
+                     <upload{#File}/>
+                     <submit action={submitPost}/>
+                   </form>
+                 </xml>
+                 <xml/>
     end
     
 and page id =
     let
-	    fun makeLi row = <xml><li>
-	      <a href={url (search row.Tags.Tag 0)}>{[row.Tags.Tag]}</a>
-	    </li></xml>
-	    fun addTags id queryString =
-	        let
-		        val tagList = parseQuery queryString.Tags
-	        in
-		        mapDml (fn t => (INSERT INTO tags (Id, Tag) VALUES ({[id]}, {[t]})))
-		               tagList.Positive;
-		        mapDml (fn t => (DELETE FROM tags WHERE Id = {[id]} AND Tag = {[t]}))
-		               tagList.Negative;
-		        redirect (url (page id))
-	        end
+        fun makeLi row = <xml><li>
+          <a href={url (search row.Tags.Tag 0)}>{[row.Tags.Tag]}</a>
+        </li></xml>
+        fun addTags id queryString =
+            let
+                val tagList = parseQuery queryString.Tags
+            in
+                mapDml (fn t => (INSERT INTO tags (Id, Tag) VALUES ({[id]}, {[t]})))
+                       tagList.Positive;
+                mapDml (fn t => (DELETE FROM tags WHERE Id = {[id]} AND Tag = {[t]}))
+                       tagList.Negative;
+                redirect (url (page id))
+            end
     in
-	    title <- oneRow (SELECT images.Title FROM images WHERE images.Id={[id]});
-	    tagLis <- queryX (SELECT tags.Tag FROM tags WHERE tags.Id={[id]} ORDER BY tags.Tag)
-			             makeLi;
-	    template ("Page: " ^ title.Images.Title)
-		         <xml>
-		           <ul>{tagLis}</ul>
+        title <- oneRow (SELECT images.Title FROM images WHERE images.Id={[id]});
+        tagLis <- queryX (SELECT tags.Tag FROM tags WHERE tags.Id={[id]} ORDER BY tags.Tag)
+                         makeLi;
+        template ("Page: " ^ title.Images.Title)
+                 <xml>
+                   <ul>{tagLis}</ul>
                    Add tags:
-		           <form>
-		             <textbox{#Tags} size=12/>
-		             <submit action={addTags id} style={STYLE "display: none"}/>
-		           </form>
+                   <form>
+                     <textbox{#Tags} size=12/>
+                     <submit action={addTags id} style={STYLE "display: none"}/>
+                   </form>
                    <hr/>
                    <a href={url (post ())}>Upload</a>
-		         </xml>
-		         <xml>
-		           <img src={url (image id)} style={STYLE "max-width: 100%"}/>
-		         </xml>
-		         <xml/>
+                 </xml>
+                 <xml>
+                   <img src={url (image id)} style={STYLE "max-width: 100%"}/>
+                 </xml>
+                 <xml/>
     end
 
 and search queryString pageNumber =
@@ -310,7 +310,7 @@ and search queryString pageNumber =
         fun roundUp pages = if pages % thumbsPerPage = 0 then
                                 pages / thumbsPerPage
                             else pages / thumbsPerPage + 1
-	    fun submitSearch query = redirect (url (search query.Query 0))
+        fun submitSearch query = redirect (url (search query.Query 0))
         fun makeThumbnail row =
             <xml><span class={thumb}>
               <a href={url (page row.Id)}>
@@ -326,17 +326,17 @@ and search queryString pageNumber =
     in
         thumbnails <- queryX query makeThumbnail;
         pages <- oneRow countQuery;
-	    template "Search"
-		         <xml>
-		           <form>
-		             <textbox{#Query} size=12 value={queryString}/>
-		             <submit action={submitSearch} style={STYLE "display: none"}/>
-		           </form>
+        template "Search"
+                 <xml>
+                   <form>
+                     <textbox{#Query} size=12 value={queryString}/>
+                     <submit action={submitSearch} style={STYLE "display: none"}/>
+                   </form>
                    <hr/>
                    <a href={url (post ())}>Upload</a>
-		         </xml>
-		         thumbnails
-		         (generatePageNumbers (roundUp (pages.N)))
+                 </xml>
+                 thumbnails
+                 (generatePageNumbers (roundUp (pages.N)))
     end
 
 and main () = search "" 0
