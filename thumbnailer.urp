@@ -1,0 +1,6 @@
+ffi thumbnailer
+include thumbnailer.h
+link thumbnailer.o
+link -lMagickCore-6.Q16HDRI
+link -lMagickWand-6.Q16HDRI
+

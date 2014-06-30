@@ -1,0 +1,18 @@
+sql schema.sql
+database dbname=gallury.db
+rewrite style Gallury/header header
+rewrite style Gallury/wrapper wrapper
+rewrite style Gallury/sidebar sidebar
+rewrite style Gallury/content content
+rewrite style Gallury/thumb thumb
+rewrite style Gallury/pageNumbers page-numbers
+allow mime text/css
+allow mime image/jpeg
+allow mime image/png
+library thumbnailer
+rewrite url Gallury/main
+rewrite url Gallury/*
+
+$/list
+$/string
+gallury
